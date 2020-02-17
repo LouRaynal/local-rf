@@ -30,9 +30,11 @@ The studied/proposed algorithms fall in four categories depending on how the tes
 
 The different R files mentioned above are sourced for the study and comparisons of the methodologies on three different examples trying to put in decline the usual random forest algorithm.
 
-1. **A four-class balanced Gaussian example** (file `Ex1-GaussianExampleBalanced.R`).
-2. **A four-class unbalanced Gaussian example** (file `Ex2-GaussianExampleUnbalanced.R`).
+1. **A four-class balanced Gaussian mixture example** (file `Ex1-GaussianExampleBalanced.R`).
+2. **A four-class unbalanced Gaussian mixture example** (file `Ex2-GaussianExampleUnbalanced.R`).
 3. **A three-class population genetics example** (file `Ex3-SnpExample.R`).
+
+The two first examples data are simulated directly into their corresponding R files. The third example uses simulations generated thanks to the DIYABC (Cornuet et al., 2014) software and saved in `reftable.bin`. The `header.txt` file is also required.
 
 ### Prerequisites
 
@@ -94,6 +96,7 @@ Many thanks to Erwan Scornet and Gérard Biau for some insightful discussions co
 ## References
 
 - Breiman L. (2001) Random forests. *Machine Learning*, 45:5-32.
+- Cornuet J.-M., Pudlo P., Veyssier J., Dehne-Garcia A., Gautier M., Leblois R., Marin J.-M. and Estoup A.  (2014) DIYABC v2.0: a software to make approximate Bayesian computation inferences about population history using single nucleotide polymorphism, DNA sequence and microsatellite data. *Bioinformatics*, 30(8):1187–1189.
 - Friedman J. H., Kohavi R. and Yun Y. (1997) Lazy decision trees. *Proceedings of the 13th National Conference on AAAI*, 717-724.
 - Fulton T., Kasif S., Salzberg S. and Waltz D. L. (1996) Local induction of decision trees: towards interactive data mining. *Proceedings of the Second International Conference on Knowledge Discovery and Data Mining*, *AAAI Press*, 14-19.
 - Tsymbal A., Pechenizkiy M. and Cunningham P. (2006) Dynamic integration with random forests. *In Fürnkranz J., Scheffer T. and Spiliopoulou M. (eds.), Machine Learning: ECML 2006.* *Lecture Notes in Computer Science*, 801-808,  Springer Berlin, Heidelberg.
