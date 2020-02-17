@@ -1,6 +1,7 @@
 ### Functions for the kernel voting RF approach
 
 # General function for the kernel voting RF approach
+# A multivariate Gaussian kernel is used.
 
 # formula :
 # data : the training data sets (in a data.frame)

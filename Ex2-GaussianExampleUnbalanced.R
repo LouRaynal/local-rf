@@ -416,7 +416,7 @@ predUKRF1 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelUnif", "KernelGauss", "KernelEpan", "KernelRF")) %dopar% {
                        
                        
-                       modelUKRF <- forestLocalMultiple(y = factor(classe), x = x.trainNoised, obs = x.testNoised[i,],
+                       modelUKRF <- forestLocalMultiple(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 1, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "Gauss")
                        return(modelUKRF$prediction)
@@ -439,7 +439,7 @@ registerDoParallel(cl)
 predUKRF2 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelUnif", "KernelGauss", "KernelEpan", "KernelRF")) %dopar% {
                        
-                       modelUKRF <- forestLocalMultiple(y = factor(classe), x = x.trainNoised, obs = x.testNoised[i,],
+                       modelUKRF <- forestLocalMultiple(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.75, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "Gauss")
                        return(modelUKRF$prediction)
@@ -462,7 +462,7 @@ registerDoParallel(cl)
 predUKRF3 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelUnif", "KernelGauss", "KernelEpan", "KernelRF")) %dopar% {
                        
-                       modelUKRF <- forestLocalMultiple(y = factor(classe), x = x.trainNoised, obs = x.testNoised[i,],
+                       modelUKRF <- forestLocalMultiple(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.50, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "Gauss")
                        return(modelUKRF$prediction)
@@ -495,7 +495,7 @@ predMKRF1 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelMultiGauss", "KernelRF")) %dopar% {
                        
                        
-                       modelMKRF <- forestLocalMultiDim(y = factor(classe), x = x.trainNoised, obs = x.testNoised[i,],
+                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 1, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "MultiGauss")
                        return(modelMKRF$prediction)
@@ -519,7 +519,7 @@ predMKRF2 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelMultiGauss", "KernelRF")) %dopar% {
                        
                        
-                       modelMKRF <- forestLocalMultiDim(y = factor(classe), x = x.trainNoised, obs = x.testNoised[i,],
+                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.75, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "MultiGauss")
                        return(modelMKRF$prediction)
@@ -543,7 +543,7 @@ predMKRF3 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelMultiGauss", "KernelRF")) %dopar% {
                        
                        
-                       modelMKRF <- forestLocalMultiDim(y = factor(classe), x = x.trainNoised, obs = x.testNoised[i,],
+                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.5, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "MultiGauss")
                        return(modelMKRF$prediction)

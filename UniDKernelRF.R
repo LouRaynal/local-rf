@@ -238,8 +238,8 @@ critLocal <- function(y, xInt, obsInt, minNodeSize, h, whichKernel){
 
 ### Build an unidimensional kernel tree
 
-# y : the training response
 # x : the training explanatory variables
+# y : the training response
 # obs : the observed data
 # mtry : the number of covariate to sample
 # minNodeSize : the threshold below which the node is terminal (1 must be used, because we stock the tree path with Nstock)
@@ -250,7 +250,7 @@ critLocal <- function(y, xInt, obsInt, minNodeSize, h, whichKernel){
 # whichKernel : which type of kernel to use
 # covWeights : to add covariate weights for their sampling
 
-treeLocal <- function(y, x, obs, mtry, minNodeSize, alpha=1, bootstrap=FALSE, Nstock, hfixe,
+treeLocal <- function(x, y, obs, mtry, minNodeSize, alpha=1, bootstrap=FALSE, Nstock, hfixe,
                       whichKernel, covWeights=NULL){
   
   covIDsEvol <- c()
@@ -473,8 +473,8 @@ getPred <- function(resLocalTree, Npred){
 ### Function for the construction of forests
 ### It can return predictions for more than one minNodeSize value thanks to multiMinNodeSize
 
-# y : the training response
 # x : the training explanatory variables
+# y : the training response
 # obs : the observed data
 # mtry : the number of covariate to sample
 # multiMinNodeSize : to return predictions for different minNodeSize values
@@ -485,13 +485,13 @@ getPred <- function(resLocalTree, Npred){
 # hfixe : does the weights are computed only once at the root (TRUE), or are they updated at each internal node (FALSE)?
 # covWeights : to add covariate weights for their sampling
 
-forestLocalMultiple <- function(y, x, obs, mtry=floor(sqrt(ncol(x))), multiMinNodeSize = 1, alpha,
+forestLocalMultiple <- function(x, y, obs, mtry=floor(sqrt(ncol(x))), multiMinNodeSize = 1, alpha,
                                 ntree = 100, bootstrap = TRUE, whichKernel, hfixe, covWeights=NULL){
   q <- length(multiMinNodeSize)
   allocationTree <- matrix(NA, q , ntree) # tree votes for the observed data
   
   for(i in 1:ntree){
-    tree.tmp <- treeLocal(y = y, x = x, obs = obs, mtry = mtry, minNodeSize = 1, alpha=alpha, bootstrap = bootstrap,
+    tree.tmp <- treeLocal(x = x, y = y, obs = obs, mtry = mtry, minNodeSize = 1, alpha=alpha, bootstrap = bootstrap,
                           Nstock = max(multiMinNodeSize), hfixe = hfixe, whichKernel = whichKernel, covWeights=covWeights)
     l <- 0
     for(j in multiMinNodeSize){
