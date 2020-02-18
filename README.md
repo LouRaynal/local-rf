@@ -15,7 +15,7 @@ Usually, the splits on the covariate space induced by the construction of a regu
 The studied/proposed algorithms fall in four categories depending on how the test data is used to modify the usual random forest to turn it into a local one. Different R files provide the source code for the different methods when built from scratch.
 
 1. **Modification of the random forest splitting rule**:
-   - The lazy decision tree introduced by Friedman et al. (1997) is here transformed into a forest and is implemented in `LazyDRF.R`.
+   - The lazy decision tree introduced by Friedman et al. (1997) is here augmented into a forest and is implemented in `LazyDRF.R`.
    - We propose to incorporate the observed information thanks to kernels giving higher weights to training data close to the test instance. We can use either one kernel per dimension of the covariate space (which is implemented in `UniDKernelRF.R`), or one multidimensional kernel (implemented in `MultiDKernelRF.R`).
 2. **Weighting of the training instances based on similarity with the test data**:
    * The case specific random forest proposed by Xu et al. (2016) is used by means of the `ranger` R package that provides an implementation.
@@ -59,7 +59,8 @@ If one is interested in toying around with the different methods, here is a simp
 #### Load the method file
 
 ```R
-source(MultiDKernelRF.R)
+source("MultiDKernelRF.R")
+source("LazyDRF.R")
 ```
 
 #### Data formatting
@@ -68,19 +69,23 @@ Most methods require the specification of the training covariance matrix, the re
 
 ```R
 # Training covariates (we keep the first instance as test)
-x <- as.matrix(iris[-1,-5])
-# Response values, we suggest converting y into numerical factors
-y <- factor(as.numeric(factor(iris[-1,5])))
+x <- iris[-1,-5]
+# Response values
+y <- factor(iris[-1,5])
 # Vector of observed covariates
-obs <- as.numeric(iris[1,-5])
+obs <- iris[1,-5]
 ```
 
 #### Construction and prediction
 
 ```R
-res <- forestLocalMultiDim(y, x, obs, multiMinNodeSize = 1, alpha=0.9, ntree = 20,
-                           bootstrap = TRUE, whichKernel="MultiGauss", hfixe=TRUE)
-res$pred # displays the prediction for the observed data
+# For the forest with multidimensional kernel
+res1 <- forestLocalMultiDim(x, y, obs, multiMinNodeSize = 1, alpha=0.9, ntree = 20, bootstrap = TRUE, whichKernel="MultiGauss", hfixe=TRUE)
+res1$prediction # displays the prediction for the observed data
+
+# For the forest of lazy decision trees
+res2 <- LazyOptionForest(x, y, obs, Nmin=5, pGain=0.9, bootstrap=TRUE, ntree=20)
+res2$prediction
 ```
 
 ## Authors
