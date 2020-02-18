@@ -1,18 +1,21 @@
+# Required package
+library(ranger)
+
 ### Functions for the kernel voting RF approach
 
 # General function for the kernel voting RF approach
 # A multivariate Gaussian kernel is used.
 
-# formula :
+# formula : Object of class formula
 # data : the training data sets (in a data.frame)
 # dataTest : the testing data sets (in a data.frame); covariates names must be identical to the training ones
-# nTree : number of trees
-# nTreeToKeep : number of trees with the highest scores we keep
+# ntree : number of trees
+# ntreeToKeep : number of trees with the highest scores we keep
 # ncores : number of cores to use
 # rule : which rule to use for the bandwidth computation (values are "quantile" or "Silverman")
 # alpha : the quantile order, if the bandwidth is computed thanks to quantiles
 
-kernelVoting <- function(formula, data, dataTest, nTree, nTreeToKeep=nTree,
+kernelVoting <- function(formula, data, dataTest, ntree, ntreeToKeep=ntree,
                         ncores=7, rule="quantile", alpha=1, ...){
 
   mf <- match.call(expand.dots=FALSE)
@@ -30,7 +33,7 @@ kernelVoting <- function(formula, data, dataTest, nTree, nTreeToKeep=nTree,
   nTest <- nrow(dataTest)
 
   # classic RF training
-  rf.ranger <- ranger(formula, data=data, keep.inbag = TRUE, num.trees = nTree, num.threads = ncores, ...)
+  rf.ranger <- ranger(formula, data=data, keep.inbag = TRUE, num.trees = ntree, num.threads = ncores, ...)
 
   predRF <- predict(object = rf.ranger, data = dataTest)$predictions
 
@@ -45,10 +48,10 @@ kernelVoting <- function(formula, data, dataTest, nTree, nTreeToKeep=nTree,
   pred.Testresponse <- predict(object = rf.ranger, data = dataTest, predict.all = TRUE, type = "response")
   predTestResponse <- pred.Testresponse$predictions
   
-  rightMatrix <- matrix(0, nrow=nTrain, ncol=nTree)
+  rightMatrix <- matrix(0, nrow=nTrain, ncol=ntree)
   
   # For each tree, check whether the prediction on training is good or not
-  for(k in 1:nTree){
+  for(k in 1:ntree){
     
     toChange <- factor(rf.ranger$forest$levels[predTrainingResponse[,k]]) == responseValues
     rightMatrix[toChange,k] <- 1 
@@ -56,9 +59,9 @@ kernelVoting <- function(formula, data, dataTest, nTree, nTreeToKeep=nTree,
   }
   
   # Recover the matrix of out-of-bag identifier (0=inbag, 1=out-of-bag)
-  matrixOOB <- matrix(0, nrow=nTrain, ncol=nTree)
+  matrixOOB <- matrix(0, nrow=nTrain, ncol=ntree)
   
-  for(k in 1:nTree){
+  for(k in 1:ntree){
     matrixOOB[inbag[,k]==0,k] <- 1
   }
   
@@ -79,7 +82,7 @@ kernelVoting <- function(formula, data, dataTest, nTree, nTreeToKeep=nTree,
       matH <- diag(h)
     }
     
-    # Center each covariate in the observed data to compute the kernel values
+    # Center each covariate with the observed data to compute the kernel values
     matXCentered <- sapply(1:ncol(covMatrix), function(x) covMatrix[,x]-covMatrixTest[i,x])
     
     KMatrix[i,] <- KernelMultiGauss(matXCentered, matH)
@@ -87,13 +90,13 @@ kernelVoting <- function(formula, data, dataTest, nTree, nTreeToKeep=nTree,
   }
   
   # To store the tree weights for each test instance
-  weights <- matrix(NA, nrow=nTest, ncol=nTree)
+  weights <- matrix(NA, nrow=nTest, ncol=ntree)
   
   for(i in 1:nTest){
     
-    weightsPredXTest <- rep(NA, nTree)
+    weightsPredXTest <- rep(NA, ntree)
     
-    for(k in 1:nTree){
+    for(k in 1:ntree){
       
       denomPos <- sum(matrixOOB[,k] * KMatrix[i,])
       
@@ -122,7 +125,7 @@ kernelVoting <- function(formula, data, dataTest, nTree, nTreeToKeep=nTree,
     
     vectorWeightedProp <- rep(NA, nlevels(responseValues))
     
-    bestTreeIndex <- order(weights[i,], decreasing = TRUE)[1:nTreeToKeep]
+    bestTreeIndex <- order(weights[i,], decreasing = TRUE)[1:ntreeToKeep]
     
     cptr <- 0
     

@@ -3,15 +3,15 @@
 library(MASS)   # for LDA
 library(abcrf)  # for data reading
 
-########## Populationg genetics example ##########
+########## Population genetics example ##########
 
 set.seed(1)
 
 refTable <- readRefTable("reftable.bin", header="header.txt")
 
-data("snp.obs")  # The two observed data
+data("snp.obs")  # Two real observed data (from the abcrf package)
 
-### Data formation
+### Data formulation
 
 N <- length(refTable$scenarios) #70100 total data
 
@@ -72,7 +72,7 @@ nTestScen3 <- nTest - 2*ceiling(nTest/3)
 idxWindows <- c(1:N.test)[-1<xtestSNP.lda[,1] & xtestSNP.lda[,1]<1 & -1<xtestSNP.lda[,2] & xtestSNP.lda[,2]<1]
 length(idxWindows)
 
-# Je veux tirer 500 données de test, pour en avoir à peu près le même nombre dans chaque classe
+# Sample 500 test data with equal proportions in each class
 
 indiceTestScen1 <- sample(idxWindows[ytestSNP[idxWindows] == 1], nTestScen1, replace = FALSE)
 indiceTestScen2 <- sample(idxWindows[ytestSNP[idxWindows] == 2], nTestScen2, replace = FALSE)
@@ -158,7 +158,8 @@ for(i in 1:nTest){
 }
 
 # Step 3 : Use these weights during the sampling of covariates
-predLVIRF1 <- rep(NA, nTest)
+predLVIRF1 <- factor(c(), levels=levels(classe))
+
 for(i in 1:nTest){
   rf.local.ranger <- ranger(mod ~ ., data = data.train, num.trees = 100,
                             split.select.weights = impxStd[i,], num.threads = ncores)
@@ -166,6 +167,7 @@ for(i in 1:nTest){
 }
 
 mean(predLVIRF1 != classeTest)
+
 
 ### When classic RF are used for the first forest
 
@@ -180,7 +182,8 @@ for(i in 1:nTest){
 }
 
 # Step 3 : Use these weights during the sampling of covariates
-predLVIRF2 <- rep(NA, nTest)
+predLVIRF2 <- factor(c(), levels=levels(classe))
+
 for(i in 1:nTest){
   rf.local.ranger <- ranger(mod ~ ., data = data.train, num.trees = 100, 
                             split.select.weights = impxStd[i,], num.threads = ncores)
@@ -242,25 +245,25 @@ source("KernelVotingRF.R")
 
 # alpha = 1
 resKVRF1 <- kernelVoting(formula = mod~., data = data.train, dataTest = data.frame(x.test), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 1)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 1)
 
 mean(resKVRF1$prediction != classeTest)
 
 # alpha = 0.75
 resKVRF2 <- kernelVoting(formula = mod~., data = data.train, dataTest = data.frame(x.test), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 0.75)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 0.75)
 
 mean(resKVRF2$prediction != classeTest)
 
 # alpha = 0.5
 resKVRF3 <- kernelVoting(formula = mod~., data = data.train, dataTest = data.frame(x.test), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 0.5)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 0.5)
 
 mean(resKVRF3$prediction != classeTest)
 
 # alpha = 0.25
 resKVRF4 <- kernelVoting(formula = mod~., data = data.train, dataTest = data.frame(x.test), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 0.25)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 0.25)
 
 mean(resKVRF4$prediction != classeTest)
 
@@ -277,7 +280,7 @@ x.test.mat <- as.matrix(x.test)
 # 1000 nearest neighbors
 K <- 1000
 
-predNNRF1 <- rep(NA, nTest)
+predNNRF1 <- factor(c(), levels=levels(classe))
 
 for(i in 1:nTest){
   
@@ -297,7 +300,7 @@ mean(predNNRF1 != classeTest)
 # 1500 nearest neighbors
 K <- 1500
 
-predNNRF2 <- rep(NA, nTest)
+predNNRF2 <- factor(c(), levels=levels(classe))
 
 for(i in 1:nTest){
   
@@ -317,7 +320,7 @@ mean(predNNRF2 != classeTest)
 # 2500 nearest neighbors
 K <- 2500
 
-predNNRF3 <- rep(NA, nTest)
+predNNRF3 <- factor(c(), levels=levels(classe))
 
 for(i in 1:nTest){
   

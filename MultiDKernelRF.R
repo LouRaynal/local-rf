@@ -26,7 +26,7 @@ KernelMultiGauss <- function(matX, matH){
   sapply(1:d, function(x)  exp(-0.5 * matX[x,] %*% invMatH %*% matX[x,] ) )
 }
 
-# To retrieve the RF predictions (by giving weights equal to 1 for each training data)
+# To retrieve the RF predictions (by giving weights equal to 1 to each training data)
 KernelRF <- function(matX, matH){
   res <- rep(1,nrow(matX))
   return(res)
@@ -44,8 +44,8 @@ propWeighted <- function(y, weights){
   for(k in 1:nbrMod){
     condEg <- y == lvl[k]
     numCondEg <- as.numeric(condEg)
-    cat(length(numCondEg),"\n")
-    cat(length(weights),"\n\n")
+    # cat(length(numCondEg),"\n")
+    # cat(length(weights),"\n\n")
     propW[k] <- sum(numCondEg*weights)/sum(weights)
   }
   
@@ -68,7 +68,7 @@ critLocalMultiDim <- function(y, xInt, obsInt, weights, minNodeSize){
   theEnd <- TRUE      # By default, yes
   critValue <- 0      # Gain initialization
   cutValue <- NA      
-  posStar <- TRUE     # indicate the position of the observed data toward the cut value, TRUE = x*<= cutValue
+  posStar <- TRUE     # indicate the position of the observed data toward the cut value, TRUE if (x*<= cutValue)
 
   
   N <- length(xInt)
@@ -78,7 +78,7 @@ critLocalMultiDim <- function(y, xInt, obsInt, weights, minNodeSize){
   nbrMod <- nlevels(ySort)
   lvl <- levels(ySort)
   
-  # If note enough data we stop
+  # If not enough data we stop
   if(N < minNodeSize){
     return( list(critValue = critValue, cutValue= cutValue, posStar= posStar, theEnd = theEnd) )
   }
@@ -95,7 +95,7 @@ critLocalMultiDim <- function(y, xInt, obsInt, weights, minNodeSize){
   v <- unique(xSort)
   v <- v[-length(v)] + diff(v)/2
   
-  res <- NA # contiendra la valeur du crit?re temporaire
+  res <- NA # will contain the criterion value
   
   # Mother node impurity
   
@@ -219,7 +219,7 @@ critLocalMultiDim <- function(y, xInt, obsInt, weights, minNodeSize){
       pRight <- rep(0,nbrMod)
     }
     
-    if(denomLeft == 0 && denomRight==0){ # !!! Si on a un noyau nul partout je reprends le crit?re CART
+    if(denomLeft == 0 && denomRight==0){  # if I have a null kernel, I take the CART criterion
       pLeft <- table(ySort[xSort <= v[i]])/sum(xSort <= v[i])
       pRight <- table(ySort[xSort > v[i]])/sum(xSort > v[i])
       res <- sum(xSort <= v[i])/length(xSort)*sum(pLeft*(1-pLeft)) + sum(xSort > v[i])/length(xSort)*sum(pRight*(1-pRight))
@@ -246,7 +246,7 @@ critLocalMultiDim <- function(y, xInt, obsInt, weights, minNodeSize){
 }
 
 
-### Build an unidimensional kernel tree
+### Build a multidimensional kernel tree
 
 # x : the training explanatory variables
 # y : the training response
@@ -441,7 +441,6 @@ treeLocalMultiDim <- function(x, y, obs, mtry, minNodeSize, alpha=1, bootstrap=F
       matX <- matX[toKeep, ,drop=FALSE]
     }
     
-    
     # We would like to stock the tree path, so that we can study influence of minNodeSize thanks to getPredMulti
     if(isLimit == FALSE && length(yBoot)<=Nstock){
       isLimit <- TRUE
@@ -482,7 +481,7 @@ treeLocalMultiDim <- function(x, y, obs, mtry, minNodeSize, alpha=1, bootstrap=F
   
 }
 
-### Function to predict thanks to the storage matrix
+### Function to recover predictions for different minNodeSize thanks to the storage matrix
 
 getPredMulti <- function(resLocalTree, Npred){
   
@@ -523,17 +522,20 @@ getPredMulti <- function(resLocalTree, Npred){
 # x : the training explanatory variables
 # y : the training response
 # obs : the observed data
-# mtry : the number of covariate to sample
+# mtry : the number of covariates to sample
 # multiMinNodeSize : to return predictions for different minNodeSize values
 # alpha : the quantile order
 # ntree : the number of trees
 # bootstrap : do we use bootstrap samples for the tree construction
-# whichKernel : which type of kernel to use ("MultiGauss" or "RF" allowed)
+# whichKernel : which type of kernel to use ("MultiGauss" or "RF" if we want to reproduce RF cuts)
 # hfixe : does the weights are computed only once at the root (TRUE), or are they updated at each internal node (FALSE)?
 # covWeights : to add covariate weights for their sampling
 
 forestLocalMultiDim <- function(x, y, obs, mtry=floor(sqrt(ncol(x))), multiMinNodeSize = 1, alpha,
                                 ntree = 100, bootstrap = TRUE, whichKernel, hfixe, covWeights=NULL){
+  
+  y <- factor(y)
+  
   q <- length(multiMinNodeSize)
   allocationTree <- matrix(NA, q , ntree)
   
@@ -549,5 +551,5 @@ forestLocalMultiDim <- function(x, y, obs, mtry=floor(sqrt(ncol(x))), multiMinNo
   row.names(allocationTree) <- multiMinNodeSize
   predictionForest <- sapply(c(1:q), function(X) sample(names(table(allocationTree[X,])[which(table(allocationTree[X,])==max(table(allocationTree[X,])))]),1) )
   names(predictionForest) <- multiMinNodeSize
-  return( list(predictionForest = predictionForest, allocationTree = allocationTree) )
+  return( list(prediction = predictionForest, allocationTree = allocationTree) )
 }

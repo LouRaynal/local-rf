@@ -1,5 +1,4 @@
-# Required packages
-
+# Required package
 library(discretization) # For data discretization
 
 
@@ -17,7 +16,7 @@ library(discretization) # For data discretization
 LazyOptionTree <- function(x, y, obs, Nmin, pGain, mtry){
   
   if(mtry > length(obs) || mtry<1){
-    stop("mtry is either too large or to small")
+    stop("mtry is either too large or too small")
   }
   
   dataDisc <- discret(y = y, x = x, obs = obs)
@@ -28,7 +27,7 @@ LazyOptionTree <- function(x, y, obs, Nmin, pGain, mtry){
   
 }
 
-### Function to discretize x and obs
+### Function to discretize x and obs thanks to the Minimum Description Length Principle (mdlp)
 
 discret <- function(y, x, obs){
   
@@ -43,7 +42,7 @@ discret <- function(y, x, obs){
     if(any(res.mdlp$cutp[[i]]=="All")){
       obs.disc[,i] <- 1
     } else{
-      obs.disc[,i] <- cut(obs[i], breaks = c(-Inf,res.mdlp$cutp[[i]],Inf), labels = FALSE)
+      obs.disc[,i] <- cut( as.numeric(obs[i]), breaks = c(-Inf,res.mdlp$cutp[[i]],Inf), labels = FALSE )
     }
   }
   
@@ -73,7 +72,7 @@ explore <- function(x, y, obs, Nmin, pGain, mtry){
     done <- TRUE
   }
   
-  # Too few data at the leaf?
+  # Not enough data at the leaf?
   if(nrow(x) < Nmin){
     result <- majority(y)
     done <- TRUE
@@ -84,21 +83,17 @@ explore <- function(x, y, obs, Nmin, pGain, mtry){
     nbrCovariates <- length(obs)
     covToTry <- sample(1:nbrCovariates, mtry, replace = FALSE)
     
-    # Compute the mother entropy
-    
+    # Compute the entropy at the mother node
     weights <- classWeights(y)
     entMother <- entropy(x, y, covNumber = NULL, cut = NULL, weights = weights)
     
     # What are the possible cuts?
-    
     listOfCuts <- computeCutsToTry(x, obs)
     
     # Store the different gains in a list
-    
     listOfGains <- listOfCuts
     
     # Compute the entropy for every possible covariate and cut value
-
     for(k in covToTry){
       
       if( !is.null(listOfCuts[[k]]) ){
@@ -124,7 +119,6 @@ explore <- function(x, y, obs, Nmin, pGain, mtry){
     optionsList <- listOfGains
     
     # Option selection
-    
     for(k in covToTry){
       
       if( !is.null(listOfGains[[k]]) ){
@@ -163,7 +157,7 @@ explore <- function(x, y, obs, Nmin, pGain, mtry){
   
 }
 
-### Check if only one modality in y
+### Check if there is only one modality in y
 
 equalVector <- function(y){
   
@@ -195,12 +189,12 @@ majority <- function(y){
   # If equality we take the majority at random among the equal classes
   pred <- sample(names(proportion[which(proportion == max(proportion))]),1)
   nSupport <- sum(y==pred)
-  return( list(pred = pred, proportion = proportion, nSupport = nSupport) )
+  return( list(prediction = pred, proportion = proportion, nSupport = nSupport) )
   
 }
 
 ### Compute cuts to try
-### Reminder, a cut value is the obs modality
+### Reminder: a cut value is the obs modality
 
 computeCutsToTry <- function(x, obs){
   
@@ -290,15 +284,20 @@ tryNewExplore <- function(x, y, obs, covNumber, cut, Nmin, pGain,  mtry){
 
 ### Build a lazyDRF
 
+# Additional arguments:
 # bootstrap : should each tree be built on bootstrap samples?
-# num.trees : number of trees
+# ntree : number of trees
 
-LazyOptionForest <- function(x, y, obs, Nmin, pGain,  mtry=floor(sqrt(length(obs))), bootstrap, num.trees){
+LazyOptionForest <- function(x, y, obs, Nmin, pGain,  mtry=floor(sqrt(length(obs))), bootstrap, ntree){
   
-  predictionTrees <- rep(NA, num.trees)
-  nSupportPerTree <- rep(NA, num.trees) # personal
+  if(!is.factor(y))
+    y <- factor(y)
   
-  for(i in 1:num.trees){
+  
+  predictionTrees <- factor(x=NULL, levels=levels(y))
+  nSupportPerTree <- rep(NA, ntree) # personal
+  
+  for(i in 1:ntree){
     
     if(bootstrap){
       toBoot <- sample(x = 1:length(y), size = length(y), replace = TRUE)

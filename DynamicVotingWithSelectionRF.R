@@ -1,26 +1,27 @@
-# Required package
+# Required packages
 library(Rcpp)
+library(ranger)
 
-sourceCpp("similarityRfBreiman.cpp")
+sourceCpp("similarityRfBreiman.cpp") # To compute the similarity matrix of Breiman
 
 ### Function for dynamic voting with selection random forest (DVSRF)
 
 # data : training data set
 # dataTest: the observed data (one or more), colnames have to be identical to the training
 # K : the number of nearest neightbors to consider for each test data
-# nTree : number of trees in the forest
-# nTreeToKeep : number of trees with the highest scores we keep
+# ntree : number of trees in the forest
+# ntreeToKeep : number of trees with the highest scores we keep
 # ncores : number of cores to use
 
-dynamicVoting <- function(formula, data, dataTest, K, nTree, nTreeToKeep, ncores, ...){
+dynamicVoting <- function(formula, data, dataTest, K, ntree, ntreeToKeep, ncores, ...){
   
-  if(nTreeToKeep > nTree) stop("nTreeToKeep must be equal or smaller than nTree")
+  if(ntreeToKeep > ntree) stop("ntreeToKeep must be equal or smaller than ntree")
   
   mf <- match.call(expand.dots=FALSE)
   m <- match(c("formula", "data"), names(mf))
   mf <- mf[c(1L,m)]
   mf[[1L]] <- as.name("model.frame")
-  mf <- eval(mf, parent.frame() )
+  mf <- eval(mf, parent.frame())
   
   responseValues <- model.response(mf)
   
@@ -30,7 +31,7 @@ dynamicVoting <- function(formula, data, dataTest, K, nTree, nTreeToKeep, ncores
   if(K > nTrain) stop("Number of nearest neighbors K too large compared to the training size")
   
   # We train a classique RF
-  rf.ranger <- ranger(formula, data=data, keep.inbag = TRUE, num.trees = nTree, num.threads = ncores, ...)
+  rf.ranger <- ranger(formula, data=data, keep.inbag = TRUE, num.trees = ntree, num.threads = ncores, ...)
   
   predTestingResponseWithRF <- predict(object = rf.ranger, data = dataTest)$predictions
   
@@ -44,8 +45,8 @@ dynamicVoting <- function(formula, data, dataTest, K, nTree, nTreeToKeep, ncores
   
   pred.NodeIDTest <- predict(object = rf.ranger, data = dataTest, predict.all = TRUE, type = 'terminalNodes')
   predTesting <- pred.NodeIDTest$predictions   # node id. for testing data
-  
-  similarityMeasure <- findweights(predTraining = predTraining, predTesting = predTesting, nTrain = nTrain, nTest = nTest, nTree = nTree)
+
+  similarityMeasure <- findweights(predTraining = predTraining, predTesting = predTesting, nTrain = nTrain, nTest = nTest, ntree = ntree)
   similarityMeasure3 <- similarityMeasure^3
   # This is a matrix with nTrain rows and nTest columns
   
@@ -57,34 +58,34 @@ dynamicVoting <- function(formula, data, dataTest, K, nTree, nTreeToKeep, ncores
   pred.Testresponse <- predict(object = rf.ranger, data = dataTest, predict.all = TRUE, type = "response")
   predTestResponse <- pred.Testresponse$predictions
   
-  margineMatrix <- matrix(-1, nrow=nTrain, ncol=nTree)
+  margineMatrix <- matrix(-1, nrow=nTrain, ncol=ntree)
   
-  for(k in 1:nTree){
+  for(k in 1:ntree){
     toChange <- predTrainingResponse[,k] == as.numeric(responseValues)
     margineMatrix[toChange,k] <- 1
   }
   
   # Recover the matrix of out-of-bag identifier (0=inbag, 1=out-of-bag)
-  matrixOOB <- matrix(0, nrow=nTrain, ncol=nTree)
+  matrixOOB <- matrix(0, nrow=nTrain, ncol=ntree)
   
-  for(k in 1:nTree){
+  for(k in 1:ntree){
     matrixOOB[inbag[,k]==0,k] <- 1
   }
   
-  ### Tree weight computation for each test instances
+  ### Tree weight computation for each test instance
   
   # First, search for the nearest-neighbors thanks to similarityMeasure3
   # Second, compute the associated weights  
   # w_k = sum_j^nTrain( 1_xjOOB_ink * similarity(xj, x*) * marge_k_j ) / sum( 1_xjOOB_ink * similarity(xj, x*))
   
-  localWeightsDV <- matrix(NA, nrow=nTest, ncol=nTree)
+  localWeightsDV <- matrix(NA, nrow=nTest, ncol=ntree)
   
   for(i in 1:nTest){
     
     KMostSimilarIndex <- order(similarityMeasure3[,i], decreasing = TRUE)[1:K]
-    weightsPredXTest <- rep(NA, nTree)
+    weightsPredXTest <- rep(NA, ntree)
     
-    for(k in 1:nTree){
+    for(k in 1:ntree){
       
       denomPos <- sum(matrixOOB[KMostSimilarIndex,k] * similarityMeasure3[KMostSimilarIndex,i])
       
@@ -107,7 +108,7 @@ dynamicVoting <- function(formula, data, dataTest, K, nTree, nTreeToKeep, ncores
     
     vectorWeightedProp <- rep(NA, nlevels(responseValues))
     
-    bestTreeIndex <- order(localWeightsDV[i,], decreasing = TRUE)[1:nTreeToKeep]
+    bestTreeIndex <- order(localWeightsDV[i,], decreasing = TRUE)[1:ntreeToKeep]
     
     for(j in 1:nlevels(responseValues)){
       

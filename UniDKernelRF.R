@@ -1,6 +1,6 @@
 ### Functions for the training of unidimensional kernel RF
 
-### Function for the computation of various kernels
+### Functions for the computation of various kernels
 # x : the covariates, assumed centered in the observed data
 # h : the bandwidth value
 
@@ -37,13 +37,13 @@ KernelUnif <- function(x, h){
   ifelse(abs(x/h)<=1, 0.5/h, 0)
 }
 
-# To retrieve the RF predictions (by giving weights equal to 1 for each training data)
+# To retrieve the classic RF predictions (by giving weights equal to 1 to each training data)
 KernelRF <- function(x, h){
   res <- rep(1,length(x))
   return(res)
 }
 
-### Function to find the best split for a given covariate using an unidimensional kernel
+### Function to find the best split for a given covariate using a unidimensional kernel
 
 # y : the response values
 # xInt : the value for a given covariate
@@ -58,7 +58,7 @@ critLocal <- function(y, xInt, obsInt, minNodeSize, h, whichKernel){
   theEnd <- TRUE      # By default, yes
   critValue <- 0      # Gain initialization
   cutValue <- NA      
-  posStar <- TRUE     # indicate the position of the observed data toward the cut value, TRUE = x*<= cutValue
+  posStar <- TRUE     # Indicates the position of the observed data toward the cut value, TRUE if (x*<= cutValue)
 
   N <- length(xInt)
   xOrd <- order(xInt)
@@ -70,7 +70,7 @@ critLocal <- function(y, xInt, obsInt, minNodeSize, h, whichKernel){
   vectorDist <- xSort - as.numeric(obsInt)
   vectorKernel <- eval(parse(text = paste("Kernel", whichKernel, "(vectorDist, h)", sep="") ) )
   
-  # If note enough data we stop
+  # If not enough data we stop
   if(N < minNodeSize){
     return( list(critValue = critValue, cutValue= cutValue, posStar= posStar, theEnd = theEnd) )
   }
@@ -83,7 +83,7 @@ critLocal <- function(y, xInt, obsInt, minNodeSize, h, whichKernel){
     
   }
   
-  # What are the possible cutValues
+  # What are the possible cutValues?
   v <- unique(xSort)
   v <- v[-length(v)] + diff(v)/2
   
@@ -236,7 +236,7 @@ critLocal <- function(y, xInt, obsInt, minNodeSize, h, whichKernel){
 }
 
 
-### Build an unidimensional kernel tree
+### Build a unidimensional kernel tree
 
 # x : the training explanatory variables
 # y : the training response
@@ -247,7 +247,7 @@ critLocal <- function(y, xInt, obsInt, minNodeSize, h, whichKernel){
 # bootstrap : do we use bootstrap samples for the tree construction
 # Nstock : the value below which we store the tree (path) evolution, so that we can recover any prediction for different minNodeSize value
 # hfixe : does the weights are computed only once at the root (TRUE), or are they updated at each internal node (FALSE)?
-# whichKernel : which type of kernel to use
+# whichKernel : which type of kernel to use, same as above
 # covWeights : to add covariate weights for their sampling
 
 treeLocal <- function(x, y, obs, mtry, minNodeSize, alpha=1, bootstrap=FALSE, Nstock, hfixe,
@@ -435,7 +435,7 @@ treeLocal <- function(x, y, obs, mtry, minNodeSize, alpha=1, bootstrap=FALSE, Ns
   
 }
 
-### Function to predict thanks to the storage matrix
+### Function to recover predictions for different minNodeSize thanks to the storage matrix
 
 getPred <- function(resLocalTree, Npred){
   
@@ -481,12 +481,15 @@ getPred <- function(resLocalTree, Npred){
 # alpha : the quantile order
 # ntree : the number of trees
 # bootstrap : do we use bootstrap samples for the tree construction
-# whichKernel : which type of kernel to use
+# whichKernel : which type of kernel to use. Possible values are "Epan", "Gauss", "Unif", "RF"
 # hfixe : does the weights are computed only once at the root (TRUE), or are they updated at each internal node (FALSE)?
 # covWeights : to add covariate weights for their sampling
 
-forestLocalMultiple <- function(x, y, obs, mtry=floor(sqrt(ncol(x))), multiMinNodeSize = 1, alpha,
+forestLocalUniDim <- function(x, y, obs, mtry=floor(sqrt(ncol(x))), multiMinNodeSize = 1, alpha,
                                 ntree = 100, bootstrap = TRUE, whichKernel, hfixe, covWeights=NULL){
+  
+  y <- factor(y)
+  
   q <- length(multiMinNodeSize)
   allocationTree <- matrix(NA, q , ntree) # tree votes for the observed data
   

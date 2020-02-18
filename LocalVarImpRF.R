@@ -1,3 +1,6 @@
+# Required package
+library(ranger)
+
 ### Function to determine local importance of covariates
 
 LocalVarImp <- function(ranger.rf.object, obs){

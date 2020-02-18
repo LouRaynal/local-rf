@@ -120,9 +120,6 @@ sum(classeTest==predTestingBayes)/nTest
 x.trainNoised <- cbind(x.train, matrix(runif(n*l, 0, 10000), nrow=n))
 x.testNoised <- cbind(x.test, matrix(runif(nTest*l, 0, 10000), nrow=nTest))
 
-data.train <- data.frame(mod = as.factor(classe), x.train)
-data.test <- data.frame(mod = as.factor(classeTest), x.test)
-
 data.trainNoised <- data.frame(mod = as.factor(classe), x.trainNoised)
 
 colnames(x.testNoised) <- colnames(data.trainNoised)[-1]
@@ -172,7 +169,7 @@ registerDoParallel(cl)
 
 predLazyDRF <- foreach(i=1:nTest, .combine="c", .packages = c("discretization")) %dopar% {
   
-  modelLazyDRF <- LazyOptionForest(x = x.trainNoised, y = classe, obs = x.testNoised[i,], Nmin = 1, pGain = 0.9, bootstrap = TRUE, num.trees = 100)
+  modelLazyDRF <- LazyOptionForest(x = x.trainNoised, y = classe, obs = x.testNoised[i,], Nmin = 1, pGain = 0.9, bootstrap = TRUE, ntree = 100)
   
   return(modelLazyDRF$pred)
   
@@ -202,14 +199,15 @@ for(i in 1:nTest){
 }
 
 # Step 3 : Use these weights during the sampling of covariates
-predLVIRF1 <- rep(NA, nTest)
+predLVIRF1 <- factor(c(),levels=levels(data.trainNoised$mod))
+
 for(i in 1:nTest){
   rf.local.ranger <- ranger(mod ~ ., data = data.trainNoised, num.trees = 100,
                             split.select.weights = impxStd[i,], num.threads = ncores)
   predLVIRF1[i] <- predict(rf.local.ranger, data=x.testNoised[i,,drop=FALSE])$predictions
 }
 
-mean(predLVIRF1-1 != classeTest) # !Different levels are returned by ranger! (hence the -1)
+mean(predLVIRF1 != classeTest)
 
 
 ### When classic RF are used for the first forest
@@ -225,14 +223,15 @@ for(i in 1:nTest){
 }
 
 # Step 3 : Use these weights during the sampling of covariates
-predLVIRF2 <- rep(NA, nTest)
+predLVIRF2 <- factor(c(),levels=levels(data.trainNoised$mod))
+
 for(i in 1:nTest){
   rf.local.ranger <- ranger(mod ~ ., data = data.trainNoised, num.trees = 100, 
                             split.select.weights = impxStd[i,], num.threads = ncores)
   predLVIRF2[i] <- predict(rf.local.ranger, data=x.testNoised[i,,drop=FALSE])$predictions
 }
 
-mean(predLVIRF2-1 != classeTest) # !Different levels are returned by ranger! (hence the -1)
+mean(predLVIRF2 != classeTest)
 
 
 ###############################################################################
@@ -289,7 +288,7 @@ source("DynamicVotingWithSelectionRF.R")
 # 3000 neighbors, we keep 100 best trees (all)
 
 resDVSRF1 <- dynamicVoting(formula = mod~., data = data.trainNoised, dataTest = data.frame(x.testNoised),
-                           K = 3000, nTree = 100, nTreeToKeep = 100, ncores = ncores)
+                           K = 3000, ntree = 100, ntreeToKeep = 100, ncores = ncores)
 
 mean(resDVSRF1$prediction !=  classeTest)
 
@@ -297,7 +296,7 @@ mean(resDVSRF1$prediction !=  classeTest)
 # 3000 neighbors, we keep 50 best trees
 
 resDVSRF2 <- dynamicVoting(formula = mod~., data = data.trainNoised, dataTest = data.frame(x.testNoised), 
-                           K = 3000, nTree = 100, nTreeToKeep = 50, ncores = ncores)
+                           K = 3000, ntree = 100, ntreeToKeep = 50, ncores = ncores)
 
 mean(resDVSRF2$prediction !=  classeTest)
 
@@ -309,25 +308,25 @@ source("KernelVotingRF.R")
 
 # alpha = 1
 resKVRF1 <- kernelVoting(formula = mod~., data = data.trainNoised, dataTest = data.frame(x.testNoised), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 1)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 1)
 
 mean(resKVRF1$prediction != classeTest)
 
 # alpha = 0.75
 resKVRF2 <- kernelVoting(formula = mod~., data = data.trainNoised, dataTest = data.frame(x.testNoised), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 0.75)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 0.75)
 
 mean(resKVRF2$prediction != classeTest)
 
 # alpha = 0.5
 resKVRF3 <- kernelVoting(formula = mod~., data = data.trainNoised, dataTest = data.frame(x.testNoised), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 0.5)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 0.5)
 
 mean(resKVRF3$prediction != classeTest)
 
 # alpha = 0.25
 resKVRF4 <- kernelVoting(formula = mod~., data = data.trainNoised, dataTest = data.frame(x.testNoised), 
-                         nTree = 100, ncores = ncores, rule = "quantile", alpha = 0.25)
+                         ntree = 100, ncores = ncores, rule = "quantile", alpha = 0.25)
 
 mean(resKVRF4$prediction != classeTest)
 
@@ -341,7 +340,7 @@ madInit <- apply(X = x.trainNoised, 2, mad)
 # 1000 nearest neighbors
 K <- 1000
 
-predNNRF1 <- rep(NA, nTest)
+predNNRF1 <- factor(c(),levels=levels(data.trainNoised$mod))
 
 for(i in 1:nTest){
   
@@ -356,12 +355,12 @@ for(i in 1:nTest){
   
 }
 
-mean(predNNRF1-1 != classeTest) # !Different levels are returned by ranger! (hence the -1)
+mean(predNNRF1 != classeTest)
 
 # 1500 nearest neighbors
 K <- 1500
 
-predNNRF2 <- rep(NA, nTest)
+predNNRF2 <- factor(c(),levels=levels(data.trainNoised$mod))
 
 for(i in 1:nTest){
   
@@ -376,12 +375,12 @@ for(i in 1:nTest){
   
 }
 
-mean(predNNRF2-1 != classeTest)
+mean(predNNRF2 != classeTest)
 
 # 2500 nearest neighbors
 K <- 2500
 
-predNNRF3 <- rep(NA, nTest)
+predNNRF3 <- factor(c(),levels=levels(data.trainNoised$mod))
 
 for(i in 1:nTest){
   
@@ -396,7 +395,7 @@ for(i in 1:nTest){
   
 }
 
-mean(predNNRF3-1 != classeTest)
+mean(predNNRF3 != classeTest)
 
 
 ########################################################
@@ -416,7 +415,7 @@ predUKRF1 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelUnif", "KernelGauss", "KernelEpan", "KernelRF")) %dopar% {
                        
                        
-                       modelUKRF <- forestLocalMultiple(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
+                       modelUKRF <- forestLocalUniDim(x = x.trainNoised, y = classe, obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 1, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "Gauss")
                        return(modelUKRF$prediction)
@@ -439,7 +438,7 @@ registerDoParallel(cl)
 predUKRF2 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelUnif", "KernelGauss", "KernelEpan", "KernelRF")) %dopar% {
                        
-                       modelUKRF <- forestLocalMultiple(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
+                       modelUKRF <- forestLocalUniDim(x = x.trainNoised, y = classe, obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.75, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "Gauss")
                        return(modelUKRF$prediction)
@@ -462,7 +461,7 @@ registerDoParallel(cl)
 predUKRF3 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelUnif", "KernelGauss", "KernelEpan", "KernelRF")) %dopar% {
                        
-                       modelUKRF <- forestLocalMultiple(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
+                       modelUKRF <- forestLocalUniDim(x = x.trainNoised, y = classe, obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.50, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "Gauss")
                        return(modelUKRF$prediction)
@@ -495,7 +494,7 @@ predMKRF1 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelMultiGauss", "KernelRF")) %dopar% {
                        
                        
-                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
+                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = classe, obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 1, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "MultiGauss")
                        return(modelMKRF$prediction)
@@ -519,7 +518,7 @@ predMKRF2 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelMultiGauss", "KernelRF")) %dopar% {
                        
                        
-                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
+                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = classe, obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.75, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "MultiGauss")
                        return(modelMKRF$prediction)
@@ -543,7 +542,7 @@ predMKRF3 <- foreach(i=1:nTest, .combine="rbind", .packages = "matrixStats",
                      .export = c("KernelMultiGauss", "KernelRF")) %dopar% {
                        
                        
-                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = factor(classe), obs = x.testNoised[i,],
+                       modelMKRF <- forestLocalMultiDim(x = x.trainNoised, y = classe, obs = x.testNoised[i,],
                                                         multiMinNodeSize = minNodeSize, alpha = 0.5, ntree = 100, 
                                                         bootstrap = TRUE, hfixe = TRUE, whichKernel = "MultiGauss")
                        return(modelMKRF$prediction)
