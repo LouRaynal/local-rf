@@ -103,7 +103,7 @@ x.test <- rbind(rmvnorm(nTest0, mu0, Sigma0),
                 rmvnorm(nTest2, mu2, Sigma2),
                 rmvnorm(nTest3, mu3, Sigma3))
 
-couleurTest <- rep("orange", n)
+couleurTest <- rep("orange", nTest)
 couleurTest[classeTest==1] <- "cyan"
 couleurTest[classeTest==2] <- "purple"
 couleurTest[classeTest==3] <- "green2"
